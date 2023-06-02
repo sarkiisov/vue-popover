@@ -1,27 +1,32 @@
-import { createPopper } from "@popperjs/core";
+import { createPopper, Placement } from "@popperjs/core";
 import { reactive, watch, nextTick, readonly } from "vue";
-import { PopoverProps } from "./types";
 
-const state = reactive<{
+export type PopoverState = {
+  manualMode: boolean
   isOpen: boolean
   trigger: HTMLElement | null
   content: HTMLElement | null,
-  props: PopoverProps
-}>({
+  placement?: Placement
+}
+
+const state = reactive<PopoverState>({
+  manualMode: false,
   isOpen: false,
   trigger: null,
-  content: null,
-  props: {
-    placement: 'right'
-  }
+  content: null
 })
 
 const methods = {
   togglePopover() {
+    if(state.manualMode) return
     state.isOpen = !state.isOpen
   },
   closePopover() {
+    if(state.manualMode) return
     state.isOpen = false
+  },
+  setIsOpen(value: boolean) {
+    state.isOpen = value
   },
   setContent(content: HTMLElement) {
     state.content = content
@@ -29,11 +34,8 @@ const methods = {
   setTrigger(trigger: HTMLElement) {
     state.trigger = trigger
   },
-  setProps(props: PopoverProps) {
-    state.props = {
-      ...state.props,
-      ...props
-    }
+  setKey<T extends keyof PopoverState>(key: T, value: PopoverState[T]) {
+    state[key] = value
   }
 }
 
@@ -41,7 +43,7 @@ watch(() => state.isOpen, async (value) => {
   if(!value) return
   await nextTick()
   createPopper(state.trigger as Element, state.content!, {
-    placement: state.props.placement,
+    placement: state.placement,
     modifiers: [
       { name: 'flip' },
       { name: 'computeStyles', options: { gpuAcceleration: false } },
